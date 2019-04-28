@@ -1,5 +1,6 @@
 package com.bodjo.main.web;
 
+import com.bodjo.main.Utils.Utils;
 import com.bodjo.main.controllers.AccountController;
 import com.bodjo.main.controllers.GameController;
 import com.bodjo.main.controllers.ServerController;
@@ -25,7 +26,11 @@ public class RESTController {
         response.addHeader("Access-Control-Allow-Origin", "*");
 
         if(username == null || password == null || username.length() < 4 || password.length() < 6){
-            return new Gson().toJson(new ResponseError("err", 400, "Too short login or pasword"));
+            return new Gson().toJson(new ResponseError("err", 400, "Too short login or password"));
+        }
+
+        if(!Utils.checkValid(username)){
+            return new Gson().toJson(new ResponseError("err", 400, "Bad username"));
         }
 
         if(password.length() < 100 && username.length() < 100) {
@@ -47,7 +52,7 @@ public class RESTController {
             return new Gson().toJson(new ResponseError("err", 401, "Wrong nickname or password"));
         }
 
-        return new Gson().toJson(new LoginResponse("ok", token, AccountController.activeUsers.get(token).getUsername()));
+        return new Gson().toJson(new LoginResponse("ok", token, username));
     }
 
     @GetMapping("/play")
@@ -58,7 +63,7 @@ public class RESTController {
 
         if(AccountController.checkToken(token)) {
             GameResponse gameResponse = gameController.getGame(token, gameName);
-            ServerController.addUser(gameName, AccountController.activeUsers.get(token).getUsername(), gameResponse.getGameSessionToken());
+            ServerController.addUser(gameName, AccountController.databaseController.getUsernameFromToken(token), gameResponse.getGameSessionToken());
 
             return new Gson().toJson(gameResponse);
         } else return new Gson().toJson(new ResponseError("err", 401,"Unauthorized"));
@@ -70,7 +75,7 @@ public class RESTController {
         response.addHeader("Access-Control-Allow-Origin", "*");
 
         if(AccountController.checkToken(token)) {
-            return new Gson().toJson(new CheckTokenResponse("ok", token, AccountController.activeUsers.get(token).getUsername()));
+            return new Gson().toJson(new CheckTokenResponse("ok", token, AccountController.databaseController.getUsernameFromToken(token)));
         }
         return new Gson().toJson(new ResponseError("err", 401,"Unauthorized"));
     }
@@ -92,7 +97,7 @@ public class RESTController {
         response.addHeader("Access-Control-Allow-Origin", "*");
 
         if(AccountController.checkToken(token)) {
-            return new Gson().toJson(AccountController.activeUsers.get(token));
+            return new Gson().toJson(AccountController.databaseController.getUserFromToken(token));
         }
 
         return new Gson().toJson(new ResponseError("err", 401,"Unauthorized"));

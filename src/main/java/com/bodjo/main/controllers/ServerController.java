@@ -7,6 +7,7 @@ import com.bodjo.main.objects.ServerStartupModel;
 import com.bodjo.main.objects.Table;
 import com.bodjo.main.objects.UserModel;
 import com.google.gson.Gson;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.SocketUtils;
 
 import javax.rmi.CORBA.Util;
@@ -46,15 +47,19 @@ public class ServerController {
         writer.flush();
 
         System.out.println("wait");
+        LoggerFactory.getLogger("Main").debug("wait");
+
         int exitCode = process.waitFor();
-        System.out.println("I am dead " + gameName);
+        LoggerFactory.getLogger("Main").debug("I am dead " + gameName);
+
 
         Scanner scanner = new Scanner(stdout);
         while (scanner.hasNextLine()) {
-            System.out.println(scanner.nextLine());
+            LoggerFactory.getLogger("Main").error(scanner.nextLine());
+
         }
 
-        System.out.println(exitCode);
+        LoggerFactory.getLogger("Main").debug(String.valueOf(exitCode));
 
         servers.remove(gameName);
         ports.remove(gameName);

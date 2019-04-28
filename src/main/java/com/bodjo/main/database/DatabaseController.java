@@ -3,6 +3,9 @@ package com.bodjo.main.database;
 import com.bodjo.main.Utils.Utils;
 import com.bodjo.main.controllers.AccountController;
 import com.bodjo.main.objects.User;
+import com.bodjo.main.objects.UserModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.naming.NamingException;
 import java.sql.*;
@@ -30,7 +33,7 @@ public class DatabaseController {
                 statement.execute("INSERT INTO accounts (nickname, password, is_admin, salt, email, registration_timestamp, place) VALUES(" + "\"" + nickname + "\"" + "," + "\"" + password + "\"" + "," + isAdmin + "," + "\"" + salt + "\"" + "," + "\"" + email + "\"" + "," + new Date().getTime() / 1000 + "," + place + ")");
                 return 200;
             } catch (SQLException e){
-                e.printStackTrace();
+                LoggerFactory.getLogger("Main").error("Exception", e);
                 return 300;
             }
         } else {
@@ -71,5 +74,83 @@ public class DatabaseController {
             }
         }
         return row;
+    }
+
+    public void removeToken(String token) throws SQLException {
+        Statement statement = connection.createStatement();
+        statement.execute("DELETE FROM tokens WHERE token = " +  "\"" + token + "\"");
+    }
+
+    public boolean checkToken(String token) throws SQLException {
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT* FROM tokens WHERE token = " +  "\"" + token + "\"");
+        HashMap result = resultSetToHashMap(resultSet);
+        LoggerFactory.getLogger("Main").debug(result.toString());
+        return !result.isEmpty();
+    }
+
+
+    public String addToken(String username) throws SQLException {
+        String token;
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT* FROM tokens WHERE username = " +  "\"" + username + "\"");
+        HashMap result = resultSetToHashMap(resultSet);
+        if(result.isEmpty()){
+            token = AccountController.generateToken();
+            statement.execute("INSERT INTO tokens(token, username) VALUES(" + "\"" + token + "\""  + "," + "\"" + username + "\"" + ")" );
+        } else {
+            token = result.get("token").toString();
+        }
+
+        return token;
+    }
+
+    public String getUsernameFromToken(String token){
+        Statement statement;
+        try {
+            statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT* FROM tokens WHERE token = " +  "\"" + token + "\"");
+            HashMap result = resultSetToHashMap(resultSet);
+            return result.get("username").toString();
+        } catch (SQLException e) {
+            LoggerFactory.getLogger("Main").error("Exception", e);
+        }
+
+        return null;
+    }
+
+    public User getUserFromToken(String token){
+        Statement statement;
+
+        try {
+            statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT* FROM tokens WHERE token = " +  "\"" + token + "\"");
+            HashMap result = resultSetToHashMap(resultSet);
+            String username = result.get("username").toString();
+            ResultSet r = statement.executeQuery("SELECT * FROM accounts WHERE nickname = " + "\"" + username + "\"" );
+            HashMap res = resultSetToHashMap(r);
+            return new User(res.get("nickname").toString(),
+                    (Integer) res.get("is_admin"),
+                    (Integer) res.get("place"),
+                    Integer.parseInt(res.get("registration_timestamp").toString()),
+                    res.get("email").toString());
+        } catch (SQLException e) {
+            LoggerFactory.getLogger("Main").error("Exception", e);
+        }
+
+        return null;
+
+    }
+    /*public void deleteToken() throws SQLException {
+    }*/
+    public void createTokenTable() throws SQLException {
+     //   deleteTokenTable();
+       // Statement statement = connection.createStatement();
+      //  statement.execute("CREATE TABLE `tokens` (`token` VARCHAR(16) NOT NULL,`username` VARCHAR(100) NOT NULL,PRIMARY KEY (`token`));");
+    }
+
+    public void deleteTokenTable() throws SQLException {
+        Statement statement = connection.createStatement();
+        statement.execute("DROP TABLE tokens");
     }
 }

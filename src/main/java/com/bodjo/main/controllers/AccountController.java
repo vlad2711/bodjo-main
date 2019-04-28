@@ -5,6 +5,7 @@ import com.bodjo.main.objects.ResponseError;
 import com.bodjo.main.objects.SignUpResponse;
 import com.bodjo.main.objects.User;
 import com.google.gson.Gson;
+import org.slf4j.LoggerFactory;
 
 import javax.naming.NamingException;
 import java.nio.charset.StandardCharsets;
@@ -17,15 +18,15 @@ import java.util.Date;
 import java.util.HashMap;
 
 public class AccountController {
-    public static HashMap<String, User> activeUsers = new HashMap<>();
 
-    private DatabaseController databaseController;
+    public static DatabaseController databaseController;
 
-    {
+    public AccountController(){
         try {
             databaseController = new DatabaseController();
+            databaseController.createTokenTable();
         } catch (ClassNotFoundException | SQLException | InstantiationException | IllegalAccessException | NamingException e) {
-            e.printStackTrace();
+            LoggerFactory.getLogger("Main").error("Exception", e);
         }
     }
 
@@ -34,19 +35,24 @@ public class AccountController {
             User user = databaseController.getUser(nickname, password);
 
             if(user != null){
-                String token = generateToken();
-                activeUsers.put(token, user);
-                return token;
+
+
+                return databaseController.addToken(nickname);
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LoggerFactory.getLogger("Main").error("Exception", e);
         }
         return "";
     }
 
     public static boolean checkToken(String token){
-        return activeUsers.containsKey(token);
+        try {
+            return databaseController.checkToken(token);
+        } catch (SQLException e) {
+            LoggerFactory.getLogger("Main").error("Exception", e);
+            return false;
+        }
     }
 
     public String signup(String nickname, String password, String email, Integer place){
@@ -54,9 +60,7 @@ public class AccountController {
             String salt = generateToken();
             int resultCode = databaseController.addUser(nickname, toSHA512(password, salt), 0, salt, email, place);
             if (resultCode == 200) {
-                String token = generateToken();
-                activeUsers.put(token, new User(nickname, 0, place, (int) (new Date().getTime() / 1000), email));
-                return new Gson().toJson(new SignUpResponse("ok", token));
+                return new Gson().toJson(new SignUpResponse("ok", databaseController.addToken(nickname)));
             }
 
             if (resultCode == 300) {
@@ -67,14 +71,18 @@ public class AccountController {
                 return new Gson().toJson(new ResponseError("err", resultCode, "User already exists"));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LoggerFactory.getLogger("Main").error("Exception", e);
         }
 
         return "";
     }
 
     public static void logout(String token){
-        activeUsers.remove(token);
+        try {
+            databaseController.removeToken(token);
+        } catch (SQLException e) {
+            LoggerFactory.getLogger("Main").error("Exception", e);
+        }
     }
 
     public static String generateToken() {
@@ -98,7 +106,7 @@ public class AccountController {
             generatedPassword = sb.toString();
         }
         catch (NoSuchAlgorithmException e){
-            e.printStackTrace();
+            LoggerFactory.getLogger("Main").error("Exception", e);
         }
 
         return generatedPassword;
