@@ -83,8 +83,13 @@ public class RESTController {
     @GetMapping("/services")
     public String getServices(HttpServletResponse response){
         Services services = new Services(new ArrayList<>());
-        for (String key : ServerController.servers.keySet() ) {
-            services.getServices().add(new Service(key, ServerController.ports.get(key)));
+
+        for (int i = 0; i < ServerController.serversNames.size(); i++) {
+            if(ServerController.ports.containsKey(ServerController.serversNames.get(i))) {
+                services.getServices().add(new Service(ServerController.serversNames.get(i), ServerController.ports.get(ServerController.serversNames.get(i))));
+            } else {
+                services.getServices().add(new Service(ServerController.serversNames.get(i), ServerController.tcpServers.get(ServerController.serversNames.get(i)).port));
+            }
         }
 
         response.addHeader("Access-Control-Allow-Origin", "*");
@@ -132,6 +137,7 @@ public class RESTController {
         return new Gson().toJson(new ResponseError("err", httpErrorCode, errorMsg));
     }
 
+
     @PostMapping("/log_out")
     public String logOut(@RequestParam("token") String token,
                          HttpServletResponse response){
@@ -140,6 +146,14 @@ public class RESTController {
         return new Gson().toJson(new LogOutResponse("ok", token));
     }
 
+    @PostMapping("/add_server")
+    public String createLocalServer(@RequestParam("serverName") String serverName,
+                                    HttpServletResponse response){
+        response.addHeader("Access-Control-Allow-Origin", "*");
+
+
+        return new Gson().toJson(new Service(serverName, ServerController.startTcpServer(serverName)));
+    }
 
     private int getErrorCode(HttpServletRequest httpRequest) {
         return (Integer) httpRequest.getAttribute("javax.servlet.error.status_code");

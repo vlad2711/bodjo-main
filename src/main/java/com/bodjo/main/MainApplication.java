@@ -29,6 +29,7 @@ public class MainApplication {
 
 			SpringApplication.run(MainApplication.class, args);
 
+
 			System.out.println(gamesModel.getGames().length);
 			for (int i = 0; i < gamesModel.getGames().length; i++) {
 				int finalI = i;

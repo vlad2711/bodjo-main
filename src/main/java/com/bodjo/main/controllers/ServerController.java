@@ -1,6 +1,7 @@
 package com.bodjo.main.controllers;
 
 import com.bodjo.main.MainApplication;
+import com.bodjo.main.TCPServer;
 import com.bodjo.main.Utils.Utils;
 import com.bodjo.main.objects.SSL;
 import com.bodjo.main.objects.ServerStartupModel;
@@ -13,12 +14,15 @@ import org.springframework.util.SocketUtils;
 import javax.rmi.CORBA.Util;
 import java.io.*;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
 public class ServerController {
     public static HashMap<String, Process> servers = new HashMap<>();
     public static HashMap<String, Integer> ports = new HashMap<>();
+    public static HashMap<String, TCPServer> tcpServers = new HashMap<>();
+    public static ArrayList<String> serversNames = new ArrayList<>();
 
     public static void runServer(String path, String gameName) throws IOException, InterruptedException {
         ProcessBuilder builder = new ProcessBuilder("sh", path + gameName + "/start.sh");
@@ -30,6 +34,7 @@ public class ServerController {
 
         servers.put(gameName, process);
         ports.put(gameName, port);
+        serversNames.add(gameName);
 
         OutputStream stdin = process.getOutputStream();
         InputStream stdout = process.getInputStream();
@@ -85,6 +90,21 @@ public class ServerController {
             System.out.println(s);
             writer.write(s);
             writer.flush();
+        } else {
+            if(tcpServers.containsKey(gameName)) {
+                tcpServers.get(gameName).addPlayer(playerName, token);
+            }
         }
+    }
+
+    public static int startTcpServer(String gameName){
+        serversNames.add(gameName);
+        TCPServer tcpServer = new TCPServer();
+        tcpServers.put(gameName, new TCPServer());
+
+        int port = SocketUtils.findAvailableTcpPort();
+        Thread th = new Thread(() -> tcpServer.run(port));
+        th.start();
+        return port;
     }
 }

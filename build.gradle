@@ -7,7 +7,7 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 group = 'com.bodjo'
-version = '0.0.2a-SNAPSHOT'
+version = '0.0.2b-SNAPSHOT'
 sourceCompatibility = '1.8'
 
 
