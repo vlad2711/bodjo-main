@@ -32,7 +32,7 @@ public class ServerController {
         ports.put(gameName, port);
 
         OutputStream stdin = process.getOutputStream();
-        InputStream stdout = process.getErrorStream();
+        InputStream stdout = process.getInputStream();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin));
@@ -49,15 +49,23 @@ public class ServerController {
         System.out.println("wait");
         LoggerFactory.getLogger("Main").debug("wait");
 
-        int exitCode = process.waitFor();
-        LoggerFactory.getLogger("Main").debug("I am dead " + gameName);
 
 
         Scanner scanner = new Scanner(stdout);
-        while (scanner.hasNextLine()) {
-            LoggerFactory.getLogger("Main").error(scanner.nextLine());
+        Thread thread = new Thread(() -> {
+            while (true) {
+                while (scanner.hasNextLine()) {
+                    LoggerFactory.getLogger("Main").debug(scanner.nextLine());
+                }
+            }
+        });
 
-        }
+        thread.start();
+
+
+        int exitCode = process.waitFor();
+        LoggerFactory.getLogger("Main").debug("I am dead " + gameName);
+
 
         LoggerFactory.getLogger("Main").debug(String.valueOf(exitCode));
 

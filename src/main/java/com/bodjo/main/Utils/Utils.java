@@ -2,14 +2,9 @@ package com.bodjo.main.Utils;
 
 import com.bodjo.main.Constants;
 import org.apache.tomcat.util.codec.binary.Base64;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
-
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 
 public class Utils {
     public static String dbUser;
